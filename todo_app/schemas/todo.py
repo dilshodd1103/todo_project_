@@ -1,0 +1,26 @@
+from pydantic import BaseModel, ConfigDict
+
+
+class CreateTodoRequest(BaseModel):
+    title: str
+    description: str
+    done: bool
+
+
+class CreateTodoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+
+
+class ReadTodoResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    done: bool
+
+
+class TodoPatchRequest(BaseModel):
+    title: str
+    description: str
+    done: bool

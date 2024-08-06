@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "todo-app"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.111.1"
+sqlalchemy = "^2.0.31"
+alembic = "^1.13.2"
+dependency-injector = "^4.41.0"
+python-ulid = "^2.7.0"
+dynaconf = "^3.2.6"
+psycopg2-binary = "^2.9.9"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["todo_app"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["F401", "TID252","D"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
