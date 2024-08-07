@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
-router = APIRouter(tags={"index"})
+router = APIRouter(tags=["index"])
 
 
 @router.get("/")
-async def index():
+async def index() -> dict:
     return {"message": "Web sayt ishlayabdi"}

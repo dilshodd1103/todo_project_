@@ -1,5 +1,3 @@
-import secrets
-
 from dynaconf import Dynaconf
 
 settings = Dynaconf(

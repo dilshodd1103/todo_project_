@@ -8,10 +8,9 @@ from . import routers
 from .container import Container
 
 
-def create_app() -> None:
-    container = Container()
+def create_app() -> FastAPI:
+    Container()
     app = FastAPI()
-    app.container = container
 
     include_routers(app, routers)
 

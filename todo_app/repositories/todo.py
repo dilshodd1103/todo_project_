@@ -13,8 +13,7 @@ class TodoRepository:
 
     def find_all(self) -> list[Todo]:
         with self.session_factory() as session:
-            todos = session.query(Todo).all()
-            return todos
+            return session.query(Todo).all()
 
     def store(self, instance: Todo) -> Todo:
         with self.session_factory() as session:

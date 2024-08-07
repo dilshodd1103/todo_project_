@@ -4,9 +4,6 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-from ..models import AbstractBase
-from .config import settings
-
 
 class Database:
     def __init__(self, db_url: str) -> None:

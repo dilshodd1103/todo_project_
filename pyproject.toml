@@ -22,7 +22,7 @@ src = ["todo_app"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["F401", "TID252","D"]
+ignore = ["D", "TID252"]
 
 [build-system]
 requires = ["poetry-core"]

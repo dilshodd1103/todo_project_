@@ -1,5 +1,4 @@
-from sqlalchemy import column
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped
 
 from .base import AbstractBase
 
