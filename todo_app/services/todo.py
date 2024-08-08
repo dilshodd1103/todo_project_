@@ -1,3 +1,5 @@
+from typing import Any
+
 from ulid import ULID
 
 from ..models.todo import Todo
@@ -12,14 +14,7 @@ class TodoService:
         instance = Todo(id=str(ULID()), title=title, description=description, done=done)
         return self.todo_repository.store(instance)
 
-    def update(
-        self,
-        *,
-        todo_id: str,
-        title: str | None = None,
-        description: str | None = None,
-        done: bool | None = None,
-    ) -> None:
+    def update(self, *, todo_id: str, **kwargs: Any) -> None:  # noqa: ANN401
         instance = self.todo_repository.get(todo_id)
 
         if title is not None:
