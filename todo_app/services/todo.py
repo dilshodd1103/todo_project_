@@ -17,13 +17,7 @@ class TodoService:
     def update(self, *, todo_id: str, **kwargs: Any) -> None:  # noqa: ANN401
         instance = self.todo_repository.get(todo_id)
 
-        if title is not None:
-            instance.title = title
-
-        if description is not None:
-            instance.description = description
-
-        if done is not None:
-            instance.done = done
+        for key, value in kwargs.items():
+            setattr(instance, key, value)
 
         self.todo_repository.store(instance)

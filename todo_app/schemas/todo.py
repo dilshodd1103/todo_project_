@@ -13,7 +13,7 @@ class CreateTodoResponse(BaseModel):
     id: str
 
 
-class ReadTodoResponse(BaseModel):
+class GetTodoResponse(BaseModel):
     id: str
     title: str
     description: str
