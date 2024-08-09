@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CreateTodoRequest(BaseModel):
@@ -13,7 +13,7 @@ class CreateTodoResponse(BaseModel):
     id: str
 
 
-class ReadTodoResponse(BaseModel):
+class GetTodoResponse(BaseModel):
     id: str
     title: str
     description: str
@@ -21,6 +21,6 @@ class ReadTodoResponse(BaseModel):
 
 
 class TodoPatchRequest(BaseModel):
-    title: str
-    description: str
-    done: bool
+    title: str = Field(None)
+    description: str = Field(None)
+    done: bool = Field(None)

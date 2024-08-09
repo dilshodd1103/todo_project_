@@ -8,7 +8,7 @@ from ..models.todo import Todo
 from ..schemas.todo import (
     CreateTodoRequest,
     CreateTodoResponse,
-    ReadTodoResponse,
+    GetTodoResponse,
     TodoPatchRequest,
 )
 
@@ -41,17 +41,17 @@ def create_todo(
     )
 
 
-@router.get("/", response_model=list[ReadTodoResponse])
+@router.get("/", response_model=list[GetTodoResponse])
 @inject
-def read_todos(
+def get_todos(
     todo_repository: repositories.TodoRepository = _todo_repositories,
 ) -> list[models.Todo]:
     return todo_repository.find_all()
 
 
-@router.get("/{todo_id}", response_model=ReadTodoResponse, summary="Get a todo")
+@router.get("/{todo_id}", response_model=GetTodoResponse)
 @inject
-def read_todo(
+def get_todo(
     todo_id: str,
     todo_repository: repositories.TodoRepository = _todo_repositories,
 ) -> Todo:
@@ -65,12 +65,12 @@ def read_todo(
 
 @router.patch("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 @inject
-def update_todo(
+def patch_todo(
     todo_id: str,
     data: TodoPatchRequest,
     todo_service: services.TodoService = _todo_service,
 ) -> None:
-    todo_service.update(todo_id=todo_id, **data.model_dump())
+    todo_service.update(todo_id=todo_id, **data.model_dump(exclude_unset=True))
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
