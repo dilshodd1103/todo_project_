@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
     container_name: todo-app-api
-    command: [ "todo_app", "--reload" ] # uvicorn will watch for changes
+    command: [ "todo_app"] # uvicorn will watch for changes
     image: todo_app
     depends_on:
       - postgres
@@ -16,6 +16,9 @@ services:
         published: ${API_PORT:-8000}
     volumes:
       - ./:/var/app
+    env_file:
+      - .env
+      
 
   postgres:
     container_name: todo-app-database
