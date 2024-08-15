@@ -1,4 +1,11 @@
 #!/bin/sh
 set -e
 
-exec todoapp "$@";
+echo "$@";
+
+if [ $1 = "todoapp" ];
+then
+    exec /var/app/todoapp "$@";
+fi
+
+exec "$@"

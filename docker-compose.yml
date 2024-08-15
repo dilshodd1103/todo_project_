@@ -6,7 +6,6 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
     container_name: todo-app-api
-    command: [ "todo_app"] # uvicorn will watch for changes
     image: todo_app
     depends_on:
       - postgres
@@ -22,8 +21,11 @@ services:
 
   postgres:
     container_name: todo-app-database
-    image: postgres
+    image: postgres:latest
     restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=your_password_here
     volumes:
       - postgres-data:/var/lib/postgresql
     env_file:
