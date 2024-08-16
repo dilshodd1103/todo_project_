@@ -14,13 +14,14 @@ from ..schemas.todo import (
 
 router = APIRouter(prefix="/todos", tags=["todo"])
 
-_todo_service: services.TodoService = Depends(
-    Provide[container.Container.todo_service],
-)
+_todo_service: services.TodoService = Depends(Provide[container.Container.todo_service])
+_todo_repositories: repositories.TodoRepository = Depends(Provide[container.Container.todo_repository])
 
-_todo_repositories = Depends(
-    Provide[container.Container.todo_repository],
-)
+
+@router.get("/", response_model=list[GetTodoResponse])
+@inject
+def get_todos(todo_repository: repositories.TodoRepository = _todo_repositories) -> list[models.Todo]:
+    return todo_repository.find_all()
 
 
 @router.post(
@@ -39,14 +40,6 @@ def create_todo(
         description=data.description,
         done=data.done,
     )
-
-
-@router.get("/", response_model=list[GetTodoResponse])
-@inject
-def get_todos(
-    todo_repository: repositories.TodoRepository = _todo_repositories,
-) -> list[models.Todo]:
-    return todo_repository.find_all()
 
 
 @router.get("/{todo_id}", response_model=GetTodoResponse)
