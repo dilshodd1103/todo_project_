@@ -1,12 +1,10 @@
 from datetime import datetime
 
 from sqlalchemy import func, types
-from sqlalchemy.orm import Mapped, declarative_base, mapped_column
-
-Base = declarative_base()
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
-class AbstractBase(Base):
+class AbstractBase(DeclarativeBase):
     __abstract__ = True
 
     id: Mapped[str] = mapped_column(types.String(26), primary_key=True)

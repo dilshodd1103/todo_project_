@@ -14,7 +14,7 @@ class TodoService:
         instance = Todo(id=str(ULID()), title=title, description=description, done=done)
         return self.todo_repository.store(instance)
 
-    def update(self, *, todo_id: str, **kwargs: Any) -> None:  # noqa: ANN401
+    def update(self, *, todo_id: str, **kwargs: Any) -> None:
         instance = self.todo_repository.get(todo_id)
 
         for key, value in kwargs.items():
