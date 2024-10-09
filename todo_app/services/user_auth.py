@@ -4,8 +4,8 @@ import jwt
 import ulid
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from h11 import Response
 from passlib.context import CryptContext
+from sqlalchemy.exc import NoResultFound
 
 from ..core.config import settings
 from ..models.user import User
@@ -76,8 +76,8 @@ class UserAuthService:
     async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
-        except HTTPException:
-            return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+        except NoResultFound:
+            return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = self.create_access_token(
