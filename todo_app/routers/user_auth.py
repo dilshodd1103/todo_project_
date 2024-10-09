@@ -1,16 +1,22 @@
+from typing import Annotated
+
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from h11 import Response
 
 from todo_app import container
 
-from ..schemas.user import CreateUser, UserToken
+from ..repositories.user_auth import UserAuthRepository
+from ..schemas.user import CreateUserToken
 from ..services.user_auth import UserAuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
 _user_service: UserAuthService = Depends(Provide[container.Container.user_service])
+_user_repository: UserAuthRepository = Depends(Provide[container.Container.user_repository])
 
 
 @router.post("/register", status_code=status.HTTP_200_OK)
@@ -22,37 +28,46 @@ async def create_user(
     password: str,
     user_service: UserAuthService = _user_service,
 ) -> None:
-    await user_service.registration(username, first_name, last_name, password)
+    await user_service.registration(username=username, first_name=first_name, last_name=last_name, password=password)
 
 
-@router.post("/login/", response_model=UserToken)
+@router.post("/login")
 @inject
-async def user_login(username: str, password: str, user_service: UserAuthService = _user_service) -> UserToken:
-    return await user_service.login(username, password)
+async def user_login(
+    token: Annotated[OAuth2PasswordRequestForm, Depends()],
+    user_service: UserAuthService = _user_service,
+) -> CreateUserToken:
+    return await user_service.login(token=token)
 
 
-@router.post("/token/refresh", response_model=UserToken)
+@router.post("/token/refresh")
 @inject
 async def refresh_token(
-    token: str = Depends(oauth2_scheme),
+    token: Annotated[str, Depends(oauth2_scheme)],
     user_service: UserAuthService = _user_service,
-) -> UserToken:
-    return await user_service.refresh_token(token)
+) -> CreateUserToken:
+    try:
+        return await user_service.refresh_token(token)
+    except HTTPException:
+        await Response(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
 
-@router.post("/token/verify", response_model=UserToken)
+@router.post("/token/verify")
 @inject
 async def verify_token(
-    token: str = Depends(oauth2_scheme),
+    token: Annotated[str, Depends(oauth2_scheme)],
     user_service: UserAuthService = _user_service,
-) -> CreateUser:
-    return await user_service.verify_token(token)
+) -> None:
+    try:
+        await user_service.verify_token(token)
+    except HTTPException:
+        await Response(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
 
-@router.post("/logout", response_model=dict, status_code=status.HTTP_200_OK)
+@router.post("/logout", status_code=status.HTTP_200_OK)
 @inject
 async def logout(
-    token: str = Depends(oauth2_scheme),
-    user_service: UserAuthService = _user_service,
-) -> dict[str, str]:
-    await user_service.logout(token)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    user_repository: UserAuthRepository = _user_repository,
+) -> None:
+    await user_repository.logout(token)

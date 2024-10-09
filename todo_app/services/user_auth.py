@@ -1,113 +1,93 @@
-import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from dotenv import load_dotenv
+import ulid
 from fastapi import HTTPException, status
-from jwt.exceptions import InvalidTokenError, PyJWTError
+from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 
-from ..schemas.user import CreateUser, UserPassword, UserPatchRequests, UserToken
-from .todo import TodoService
+from ..core.config import settings
+from ..models.user import User
+from ..repositories.user_auth import UserAuthRepository
+from ..schemas.user import (
+    CreateUserToken,
+    UserPatchRequests,
+)
 
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+SECRET_KEY = settings.jwt.secret_key
+ALGORITHM = settings.jwt.algoritm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt.access_token_expire_minutes
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-blacklist = set()
-
-fake_users_db = {
-    "dilshod": {
-        "username": "dilshod",
-        "first_name": "dilshodtech",
-        "last_name": "Qurbonmurotov Dilshod",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-    },
-}
-
 
 class UserAuthService:
-    def __init__(self, todo_service: TodoService, pwd_context: CryptContext) -> None:
-        self.todo_service = todo_service
+    def __init__(self, pwd_context: CryptContext, user_repository: UserAuthRepository) -> None:
         self.pwd_context = pwd_context
+        self.user_repository = user_repository
 
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return self.pwd_context.verify(plain_password, hashed_password)
+    def verify_password(self, plain_password: str, password: str) -> bool:
+        return self.pwd_context.verify(plain_password, password)
 
-    def get_password_hash(self, hashed_password: str) -> str:
-        return self.pwd_context.hash(hashed_password)
+    def get_password_hash(self, password: str) -> str:
+        return self.pwd_context.hash(password)
 
-    def get_user(self, db: dict[str, dict[str, str]], username: str) -> UserPassword | None:
-        if username in db:
-            user_dict = db[username]
-            return CreateUser(**user_dict)
-        return None
+    def authenticate_user(self, username: str, password: str) -> User | None:
+        user = self.user_repository.get_by_username(username=username)
 
-    def authenticate_user(self, username: str, password: str) -> CreateUser | None:
-        user = self.get_user(fake_users_db, username)
         if not user or not self.verify_password(password, user.hashed_password):
             return None
         return user
 
-    def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
+    def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:  # noqa: PLR6301
         to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
+        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=1))
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-    async def refresh_token(self, token: str) -> UserToken:
+    def get_user_from_token(self, *, token: str) -> str:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+        username: str = payload.get("sub")
+
+        if not username:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        user = self.user_repository.get_by_username(username=username)
+
+        if not user:
+            return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return user.id
+
+    async def refresh_token(self, token: str) -> CreateUserToken:
         user = await self.verify_token(token)
-        return await self.login(user["username"], user["hashed_password"])
-
-    async def verify_token(self, token: str) -> CreateUser:
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+        access_token = self.create_access_token(data={"sub": user.username})
+        return CreateUserToken(
+            access_token=access_token,
+            token_type="bearer",  # noqa: S106
         )
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username: str = payload.get("sub")
-        except InvalidTokenError:
-            return credentials_exception
-        user = self.get_user(fake_users_db, username=username)
-        if user is None:
-            return credentials_exception
-        return user
 
-    async def get_current_user(self, token: str) -> CreateUser:
-        credential_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unable to recover credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username: str = payload.get("sub")
-            token_data = UserPatchRequests(username=username)
-        except PyJWTError:
-            return credential_exception
-        user = self.get_user(fake_users_db, token_data.username)
-        if user is None:
-            return credential_exception
-        return user
+    async def verify_token(self, token: str) -> User:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise {"message": "User not fount"}
+        token_data = UserPatchRequests(username=username)
 
-    async def registration(self, username: str, first_name: str, last_name: str, password: str) -> None:
+        return self.user_repository.get_by_username(username=token_data.username)
+
+    async def registration(self, *, username: str, first_name: str, last_name: str, password: str) -> None:
         hashed_password = self.get_password_hash(password)
-        user = CreateUser(
+        new_user = User(
+            id=str(ulid.ULID()),
             username=username,
             first_name=first_name,
             last_name=last_name,
             hashed_password=hashed_password,
         )
-        fake_users_db[username] = user.dict()
+        return self.user_repository.add_user(new_user)
 
-    async def login(self, username: str, password: str) -> UserToken:
-        user = self.authenticate_user(username, password)
+    async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateUserToken:
+        user = self.authenticate_user(token.username, token.password)
 
         if not user:
             raise HTTPException(
@@ -121,7 +101,4 @@ class UserAuthService:
             data={"sub": user.username},
             expires_delta=access_token_expires,
         )
-        return UserToken(access_token=access_token, token_type=["bearer"])
-
-    async def logout(self, token: str) -> None:
-        blacklist.add(token)
+        return CreateUserToken(access_token=access_token, token_type="bearer")  # noqa: S106

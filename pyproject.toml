@@ -14,10 +14,10 @@ dependency-injector = "^4.41.0"
 python-ulid = "^2.7.0"
 dynaconf = "^3.2.6"
 psycopg2-binary = "^2.9.9"
-passlib = "1.7.4"
-pyjwt = "^2.9.0"
-bcrypt = "3.2.0"
+passlib = "^1.7.4"
+bcrypt = "^3.2.0"
 python-jose = "^3.3.0"
+pyjwt = "^2.9.0"
 
 [tool.ruff]
 target-version = "py310"

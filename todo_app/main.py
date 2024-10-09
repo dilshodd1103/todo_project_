@@ -9,8 +9,11 @@ from .container import Container
 
 
 def create_app() -> FastAPI:
-    Container()
+    container = Container()
+    container.wire(packages=[routers.__name__])
+
     app = FastAPI()
+    app.container = container
 
     include_routers(app, routers)
 

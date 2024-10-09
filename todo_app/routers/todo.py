@@ -1,5 +1,8 @@
+from typing import Annotated
+
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import NoResultFound
 from starlette import status
 
@@ -11,11 +14,15 @@ from ..schemas.todo import (
     GetTodoResponse,
     TodoPatchRequest,
 )
+from ..services.user_auth import UserAuthService
 
 router = APIRouter(prefix="/todos", tags=["todo"])
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
 _todo_service: services.TodoService = Depends(Provide[container.Container.todo_service])
 _todo_repositories: repositories.TodoRepository = Depends(Provide[container.Container.todo_repository])
+_user_service: UserAuthService = Depends(Provide[container.Container.user_service])
 
 
 @router.get("/", response_model=list[GetTodoResponse])
@@ -25,20 +32,23 @@ def get_todos(todo_repository: repositories.TodoRepository = _todo_repositories)
 
 
 @router.post(
-    "/",
+    "/create",
     response_model=CreateTodoResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a todo",
 )
 @inject
 def create_todo(
     data: CreateTodoRequest,
+    token: Annotated[str, Header(validation_alias="Authorization")],
     todo_service: services.TodoService = _todo_service,
+    user_service: UserAuthService = _user_service,
 ) -> models.Todo:
+    owner_id = user_service.get_user_from_token(token=token)
     return todo_service.create(
         title=data.title,
         description=data.description,
         done=data.done,
+        owner_id=owner_id,
     )
 
 

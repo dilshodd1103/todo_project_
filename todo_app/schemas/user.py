@@ -1,24 +1,20 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
-class CreateUser(BaseModel):
+class CreateUserRequest(BaseModel):
     username: str
     first_name: str | None = None
     last_name: str | None = None
     hashed_password: str
 
 
-class UserPassword(CreateUser):
+class UserPasswordRequests(CreateUserRequest):
     pass
 
 
-class UserConfig(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-
-class UserToken(BaseModel):
+class CreateUserToken(BaseModel):
     access_token: str
-    token_type: list[str]
+    token_type: str
 
 
 class UserPatchRequests(BaseModel):
