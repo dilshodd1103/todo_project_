@@ -8,7 +8,7 @@ from h11 import Response
 from todo_app import container
 
 from ..repositories.user_auth import UserAuthRepository
-from ..schemas.user import CreateUserToken
+from ..schemas.user import CreateTokenResponse
 from ..services.user_auth import UserAuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -21,7 +21,7 @@ _user_repository: UserAuthRepository = Depends(Provide[container.Container.user_
 
 @router.post("/register", status_code=status.HTTP_200_OK)
 @inject
-async def create_user(
+async def register(
     username: str,
     first_name: str,
     last_name: str,
@@ -36,7 +36,7 @@ async def create_user(
 async def user_login(
     token: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: UserAuthService = _user_service,
-) -> CreateUserToken:
+) -> CreateTokenResponse:
     return await user_service.login(token=token)
 
 
@@ -45,7 +45,7 @@ async def user_login(
 async def refresh_token(
     token: Annotated[str, Depends(oauth2_scheme)],
     user_service: UserAuthService = _user_service,
-) -> CreateUserToken:
+) -> CreateTokenResponse:
     try:
         return await user_service.refresh_token(token)
     except HTTPException:
@@ -62,12 +62,3 @@ async def verify_token(
         await user_service.verify_token(token)
     except HTTPException:
         await Response(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
-
-
-@router.post("/logout", status_code=status.HTTP_200_OK)
-@inject
-async def logout(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    user_repository: UserAuthRepository = _user_repository,
-) -> None:
-    await user_repository.logout(token)

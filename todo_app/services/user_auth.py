@@ -10,7 +10,7 @@ from ..core.config import settings
 from ..models.user import User
 from ..repositories.user_auth import UserAuthRepository
 from ..schemas.user import (
-    CreateUserToken,
+    CreateTokenResponse,
     UserPatchRequests,
 )
 
@@ -58,10 +58,10 @@ class UserAuthService:
             return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         return user.id
 
-    async def refresh_token(self, token: str) -> CreateUserToken:
+    async def refresh_token(self, token: str) -> CreateTokenResponse:
         user = await self.verify_token(token)
         access_token = self.create_access_token(data={"sub": user.username})
-        return CreateUserToken(
+        return CreateTokenResponse(
             access_token=access_token,
             token_type="bearer",  # noqa: S106
         )
@@ -86,7 +86,7 @@ class UserAuthService:
         )
         return self.user_repository.add_user(new_user)
 
-    async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateUserToken:
+    async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
         user = self.authenticate_user(token.username, token.password)
 
         if not user:
@@ -101,4 +101,4 @@ class UserAuthService:
             data={"sub": user.username},
             expires_delta=access_token_expires,
         )
-        return CreateUserToken(access_token=access_token, token_type="bearer")  # noqa: S106
+        return CreateTokenResponse(access_token=access_token, token_type="bearer")  # noqa: S106

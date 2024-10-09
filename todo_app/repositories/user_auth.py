@@ -16,11 +16,3 @@ class UserAuthRepository:
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-
-    async def logout(self, user_id: str) -> None:
-        with self.session_factory() as db:
-            user = db.query(User).filter(User.id == user_id).first()
-
-            if user:
-                db.delete(user)
-                db.commit()

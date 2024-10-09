@@ -12,7 +12,7 @@ class UserPasswordRequests(CreateUserRequest):
     pass
 
 
-class CreateUserToken(BaseModel):
+class CreateTokenResponse(BaseModel):
     access_token: str
     token_type: str
 
