@@ -26,24 +26,10 @@ class UserAuthService:
         self.pwd_context = pwd_context
         self.user_repository = user_repository
 
-    def verify_password(self, plain_password: str, password: str) -> bool:
-        return self.pwd_context.verify(plain_password, password)
-
-    def get_password_hash(self, password: str) -> str:
-        return self.pwd_context.hash(password)
-
-    def authenticate_user(self, username: str, password: str) -> User | None:
-        user = self.user_repository.get_by_username(username=username)
-
-        if not user or not self.verify_password(password, user.hashed_password):
-            return None
-        return user
-
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:  # noqa: PLR6301
-        to_encode = data.copy()
         expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=1))
-        to_encode.update({"exp": expire})
-        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        new_data = {"exp": expire, **data}
+        return jwt.encode(new_data, SECRET_KEY, algorithm=ALGORITHM)
 
     def get_user_from_token(self, *, token: str) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
@@ -76,7 +62,7 @@ class UserAuthService:
         return self.user_repository.get_by_username(username=token_data.username)
 
     async def registration(self, *, username: str, first_name: str, last_name: str, password: str) -> None:
-        hashed_password = self.get_password_hash(password)
+        hashed_password = self.pwd_context.hash(password)
         new_user = User(
             id=str(ulid.ULID()),
             username=username,
@@ -87,7 +73,10 @@ class UserAuthService:
         return self.user_repository.add_user(new_user)
 
     async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
-        user = self.authenticate_user(token.username, token.password)
+        user = self.user_repository.get_by_username(username=token.username)
+
+        if not user or not self.pwd_context.verify(token.password, user.hashed_password):
+            return None
 
         if not user:
             raise HTTPException(
