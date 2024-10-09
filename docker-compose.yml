@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile
+    container_name: todo-app-api
+    image: todo_app
+    depends_on:
+      - postgres
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./:/var/app 
+    env_file:
+      - .env
+
+  postgres:
+    container_name: todo-app-postgres
+    image: postgres:latest
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+   
+
+
+volumes:
+  postgres-data:
