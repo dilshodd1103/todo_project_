@@ -8,10 +8,6 @@ class CreateUserRequest(BaseModel):
     hashed_password: str
 
 
-class UserPasswordRequests(CreateUserRequest):
-    pass
-
-
 class CreateTokenResponse(BaseModel):
     access_token: str
     token_type: str
