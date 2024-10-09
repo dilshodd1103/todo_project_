@@ -11,8 +11,8 @@ class UserAuthRepository:
         with self.session_factory() as db:
             return db.query(User).filter(User.username == username).one()
 
-    def add_user(self, new_user: User) -> None:
+    def store(self, instance: User) -> None:
         with self.session_factory() as db:
-            db.add(new_user)
+            db.add(instance)
             db.commit()
-            db.refresh(new_user)
+            db.refresh(instance)

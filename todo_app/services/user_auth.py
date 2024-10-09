@@ -70,7 +70,7 @@ class UserAuthService:
             last_name=last_name,
             hashed_password=hashed_password,
         )
-        return self.user_repository.add_user(new_user)
+        return self.user_repository.store(new_user)
 
     async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
         user = self.user_repository.get_by_username(username=token.username)
