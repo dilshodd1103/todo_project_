@@ -14,8 +14,11 @@ class TodoService:
         instance = Todo(id=str(ulid.ULID()), title=title, description=description, done=done, owner_id=owner_id)
         return self.todo_repository.store(instance)
 
-    def update(self, *, todo_id: str, **kwargs: Any) -> None:
-        instance = self.todo_repository.get(todo_id)
+    def update(self, *, todo: str, **kwargs: Any) -> None:
+        instance = self.todo_repository.get(todo)
+
+        if instance is None:
+            raise ValueError(f"Todo with owner_id {todo} not found")
 
         for key, value in kwargs.items():
             setattr(instance, key, value)

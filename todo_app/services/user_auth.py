@@ -9,7 +9,7 @@ from sqlalchemy.exc import NoResultFound
 
 from ..core.config import settings
 from ..models.user import User
-from ..repositories.user_auth import UserAuthRepository
+from ..repositories.user_auth import UserRepository
 from ..schemas.user import (
     CreateTokenResponse,
     UserPatchRequests,
@@ -23,26 +23,27 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserAuthService:
-    def __init__(self, pwd_context: CryptContext, user_repository: UserAuthRepository) -> None:
+    def __init__(self, pwd_context: CryptContext, user_repository: UserRepository) -> None:
         self.pwd_context = pwd_context
         self.user_repository = user_repository
 
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:  # noqa: PLR6301
-        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=1))
+        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=45))
         new_data = {"exp": expire, **data}
         return jwt.encode(new_data, SECRET_KEY, algorithm=ALGORITHM)
 
-    def get_user_from_token(self, *, token: str) -> str:
+    def get_user_id_from_token(self, token: str) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
         username: str = payload.get("sub")
 
         if not username:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-        user = self.user_repository.get_by_username(username=username)
+        try:
+            user = self.user_repository.get_by_username(username=username)
+        except NoResultFound as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found") from e
 
-        if not user:
-            return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         return user.id
 
     async def refresh_token(self, token: str) -> CreateTokenResponse:

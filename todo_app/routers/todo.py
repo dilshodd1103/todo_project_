@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import NoResultFound
 from starlette import status
@@ -14,7 +14,6 @@ from ..schemas.todo import (
     GetTodoResponse,
     TodoPatchRequest,
 )
-from ..services.user_auth import UserAuthService
 
 router = APIRouter(prefix="/todos", tags=["todo"])
 
@@ -22,7 +21,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 _todo_service: services.TodoService = Depends(Provide[container.Container.todo_service])
 _todo_repositories: repositories.TodoRepository = Depends(Provide[container.Container.todo_repository])
-_user_service: UserAuthService = Depends(Provide[container.Container.user_service])
+_user_service: services.UserAuthService = Depends(Provide[container.Container.user_service])
 
 
 @router.get("/", response_model=list[GetTodoResponse])
@@ -39,11 +38,11 @@ def get_todos(todo_repository: repositories.TodoRepository = _todo_repositories)
 @inject
 def create_todo(
     data: CreateTodoRequest,
-    token: Annotated[str, Header(validation_alias="Authorization")],
+    token: Annotated[str, Depends(oauth2_scheme)],
     todo_service: services.TodoService = _todo_service,
-    user_service: UserAuthService = _user_service,
+    user_service: services.UserAuthService = _user_service,
 ) -> models.Todo:
-    owner_id = user_service.get_user_from_token(token=token)
+    owner_id = user_service.get_user_id_from_token(token=token)
     return todo_service.create(
         title=data.title,
         description=data.description,
@@ -56,14 +55,18 @@ def create_todo(
 @inject
 def get_todo(
     todo_id: str,
+    token: Annotated[str, Depends(oauth2_scheme)],
     todo_repository: repositories.TodoRepository = _todo_repositories,
+    user_service: services.UserAuthService = _user_service,
 ) -> Todo:
+    owner_id = user_service.get_user_id_from_token(token=token)
+
     try:
-        todos = todo_repository.get(todo_id)
+        todo = todo_repository.get_by_id_and_owner_id(instance_id=todo_id, owner_id=owner_id)
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from e
 
-    return todos
+    return todo
 
 
 @router.patch("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -71,18 +74,32 @@ def get_todo(
 def patch_todo(
     todo_id: str,
     data: TodoPatchRequest,
+    token: Annotated[str, Depends(oauth2_scheme)],
+    todo_repository: repositories.TodoRepository = _todo_repositories,
     todo_service: services.TodoService = _todo_service,
+    user_service: services.UserAuthService = _user_service,
 ) -> None:
-    todo_service.update(todo_id=todo_id, **data.model_dump(exclude_unset=True))
+    owner_id = user_service.get_user_id_from_token(token=token)
+    try:
+        todo = todo_repository.get_by_id_and_owner_id(instance_id=todo_id, owner_id=owner_id)
+    except NoResultFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from e
+
+    todo_service.update(todo=todo.id, **data.model_dump(exclude_unset=True))
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 @inject
 def delete_todo(
     todo_id: str,
+    token: Annotated[str, Depends(oauth2_scheme)],
     todo_repository: repositories.TodoRepository = _todo_repositories,
+    user_service: services.UserAuthService = _user_service,
 ) -> None:
+    owner_id = user_service.get_user_id_from_token(token=token)
     try:
-        todo_repository.delete(todo_id)
+        todo = todo_repository.get_by_id_and_owner_id(instance_id=todo_id, owner_id=owner_id)
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from e
+
+    return todo_repository.delete(todo)

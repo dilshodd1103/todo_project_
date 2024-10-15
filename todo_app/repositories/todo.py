@@ -9,7 +9,11 @@ class TodoRepository:
 
     def get(self, instance_id: str) -> Todo:
         with self.session_factory() as session:
-            return session.query(Todo).filter(Todo.id == instance_id).one()
+            return session.query(Todo).filter(Todo.id == instance_id).first()
+
+    def get_by_id_and_owner_id(self, *, instance_id: str, owner_id: str) -> Todo:
+        with self.session_factory() as session:
+            return session.query(Todo).filter(Todo.id == instance_id, Todo.owner_id == owner_id).one()
 
     def find_all(self) -> list[Todo]:
         with self.session_factory() as session:
@@ -22,8 +26,7 @@ class TodoRepository:
             session.refresh(instance)
             return instance
 
-    def delete(self, instance_id: str) -> None:
+    def delete(self, instance: str) -> None:
         with self.session_factory() as session:
-            instance = session.query(Todo).filter(Todo.id == instance_id).one()
             session.delete(instance)
             session.commit()

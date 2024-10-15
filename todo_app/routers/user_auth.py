@@ -7,7 +7,6 @@ from h11 import Response
 
 from todo_app import container
 
-from ..repositories.user_auth import UserAuthRepository
 from ..schemas.user import CreateTokenResponse
 from ..services.user_auth import UserAuthService
 
@@ -16,7 +15,6 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 _user_service: UserAuthService = Depends(Provide[container.Container.user_service])
-_user_repository: UserAuthRepository = Depends(Provide[container.Container.user_repository])
 
 
 @router.post("/register", status_code=status.HTTP_200_OK)
