@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from . import routers
 from .container import Container
 
-
+    
 def create_app() -> FastAPI:
     container = Container()
     container.wire(packages=[routers.__name__])
