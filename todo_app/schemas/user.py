@@ -7,7 +7,10 @@ class CreateUserRequest(BaseModel):
     last_name: str | None = None
     hashed_password: str
 
-
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    
 class CreateTokenResponse(BaseModel):
     access_token: str
     token_type: str

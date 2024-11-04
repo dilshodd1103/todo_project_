@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 import ulid
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy.exc import NoResultFound
@@ -15,6 +15,7 @@ from ..repositories.user_auth import UserRepository
 from ..schemas.user import (
     CreateTokenResponse,
     UserPatchRequests,
+    LoginRequest
 )
 
 SECRET_KEY = settings.jwt.secret_key
@@ -82,7 +83,7 @@ class UserAuthService:
         )
         return self.user_repository.store(new_user)
         
-    async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
+    async def login(self, *, token: LoginRequest = Body(...)) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
         except NoResultFound:
