@@ -6,6 +6,8 @@ from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy.exc import NoResultFound
+from h11 import Response
+
 
 from ..core.config import settings
 from ..models.user import User
@@ -65,6 +67,12 @@ class UserAuthService:
 
     async def registration(self, *, username: str, first_name: str, last_name: str, password: str) -> None:
         hashed_password = self.pwd_context.hash(password)
+        existing_user = self.user_repository.get_by_username(username)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already exists"
+            )
         new_user = User(
             id=str(ulid.ULID()),
             username=username,
@@ -73,7 +81,7 @@ class UserAuthService:
             hashed_password=hashed_password,
         )
         return self.user_repository.store(new_user)
-
+        
     async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
