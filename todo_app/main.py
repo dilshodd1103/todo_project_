@@ -1,6 +1,8 @@
 import importlib
 import pkgutil
 from types import ModuleType
+from fastapi.middleware.cors import CORSMiddleware
+
 
 from fastapi import FastAPI
 
@@ -15,6 +17,18 @@ def create_app() -> FastAPI:
     app = FastAPI()
     app.container = container
 
+    origins = [
+        "http://localhost",
+        "http://localhost:8080",
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     include_routers(app, routers)
 
     return app
