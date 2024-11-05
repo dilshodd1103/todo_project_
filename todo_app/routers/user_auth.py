@@ -7,7 +7,7 @@ from h11 import Response
 
 from todo_app import container
 
-from ..schemas.user import CreateTokenResponse
+from ..schemas.user import CreateTokenResponse, LoginRequest
 from ..services.user_auth import UserAuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -32,7 +32,7 @@ async def register(
 @router.post("/login")
 @inject
 async def user_login(
-    token: Annotated[OAuth2PasswordRequestForm, Depends()],
+    token: LoginRequest,
     user_service: UserAuthService = _user_service,
 ) -> CreateTokenResponse:
     return await user_service.login(token=token)

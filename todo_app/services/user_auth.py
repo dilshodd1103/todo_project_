@@ -83,11 +83,15 @@ class UserAuthService:
         )
         return self.user_repository.store(new_user)
         
-    async def login(self, *, token: LoginRequest = Body(...)) -> CreateTokenResponse:
+    async def login(self, *, token: LoginRequest) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
         except NoResultFound:
             return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        
+        if user is None or not UserAuthService.verify_token(token.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Username yoki parol noto'g'ri")
+
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = self.create_access_token(
