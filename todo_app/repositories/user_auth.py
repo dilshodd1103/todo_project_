@@ -9,7 +9,7 @@ class UserRepository:
 
     def get_by_username(self, username: str) -> User:
         with self.session_factory() as session:
-            return session.query(User).filter(User.username == username).one()
+            return session.query(User).filter(User.username == username).first()
 
     def store(self, instance: User) -> None:
         with self.session_factory() as session:
