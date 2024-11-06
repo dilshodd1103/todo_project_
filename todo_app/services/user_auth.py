@@ -56,6 +56,9 @@ class UserAuthService:
             access_token=access_token,
             token_type="bearer",  # noqa: S106
         )
+    
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        return pwd_context.verify(plain_password, hashed_password)
 
     async def verify_token(self, token: str) -> User:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -87,7 +90,10 @@ class UserAuthService:
     async def login(self, *, token: LoginRequest) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
-            password = self.verify_token(token=user.hashed_password)
+
+            if not self.verify_password(token.password, user.hashed_password):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Noto'g'ri parol")
+
         except NoResultFound:
             return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
