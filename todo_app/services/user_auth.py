@@ -60,6 +60,7 @@ class UserAuthService:
     async def verify_token(self, token: str) -> User:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+
         if username is None:
             raise {"message": "User not fount"}
         token_data = UserPatchRequests(username=username)
@@ -86,12 +87,9 @@ class UserAuthService:
     async def login(self, *, token: LoginRequest) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
+            password = self.verify_token(token=user.hashed_password)
         except NoResultFound:
             return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        
-        if user is None or not UserAuthService.verify_token(token.password, user.hashed_password):
-            raise HTTPException(status_code=401, detail="Username yoki parol noto'g'ri")
-
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = self.create_access_token(

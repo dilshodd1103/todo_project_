@@ -18,3 +18,4 @@ class CreateTokenResponse(BaseModel):
 
 class UserPatchRequests(BaseModel):
     username: str | None = None
+    password: str | None = None
