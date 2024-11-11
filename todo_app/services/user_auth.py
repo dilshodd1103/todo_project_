@@ -87,7 +87,7 @@ class UserAuthService:
         )
         return self.user_repository.store(new_user)
         
-    async def login(self, *, token: LoginRequest) -> CreateTokenResponse:
+    async def login(self, *, token: OAuth2PasswordRequestForm) -> CreateTokenResponse:
         try:
             user = self.user_repository.get_by_username(username=token.username)
 

@@ -32,7 +32,7 @@ async def register(
 @router.post("/login")
 @inject
 async def user_login(
-    token: LoginRequest,
+    token: Annotated[str, Depends(OAuth2PasswordRequestForm)],
     user_service: UserAuthService = _user_service,
 ) -> CreateTokenResponse:
     return await user_service.login(token=token)

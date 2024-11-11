@@ -26,8 +26,14 @@ _user_service: services.UserAuthService = Depends(Provide[container.Container.us
 
 @router.get("/", response_model=list[GetTodoResponse])
 @inject
-def get_todos(todo_repository: repositories.TodoRepository = _todo_repositories) -> list[models.Todo]:
-    return todo_repository.find_all()
+def get_todos(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    todo_repository: repositories.TodoRepository = _todo_repositories,
+    user_service: services.UserAuthService = _user_service,
+    ) -> list[models.Todo]:
+    owner_id = user_service.get_user_id_from_token(token=token)
+
+    return todo_repository.find_all(owner_id)
 
 
 @router.post(

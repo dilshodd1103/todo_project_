@@ -1,5 +1,5 @@
 from ..core.database import Database
-from ..models.todo import Todo
+from ..models.todo import Todo, User
 
 
 class TodoRepository:
@@ -15,9 +15,9 @@ class TodoRepository:
         with self.session_factory() as session:
             return session.query(Todo).filter(Todo.id == instance_id, Todo.owner_id == owner_id).one()
 
-    def find_all(self) -> list[Todo]:
+    def find_all(self, token) -> list[Todo]:
         with self.session_factory() as session:
-            return session.query(Todo).all()
+            return session.query(Todo).filter(Todo.owner_id == token).all()
 
     def store(self, instance: Todo) -> Todo:
         with self.session_factory() as session:
