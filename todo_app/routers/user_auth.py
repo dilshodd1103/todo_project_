@@ -7,7 +7,7 @@ from h11 import Response
 
 from todo_app import container
 
-from ..schemas.user import CreateTokenResponse, LoginRequest
+from ..schemas.user import CreateTokenResponse, LoginRequest, CreateUserRequest
 from ..services.user_auth import UserAuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -20,14 +20,11 @@ _user_service: UserAuthService = Depends(Provide[container.Container.user_servic
 @router.post("/register", status_code=status.HTTP_200_OK)
 @inject
 async def register(
-    username: str,
-    first_name: str,
-    last_name: str,
-    password: str,
+    requests: CreateUserRequest,
     user_service: UserAuthService = _user_service,
 ) -> None:
-    await user_service.registration(username=username, first_name=first_name, last_name=last_name, password=password)
-
+    await user_service.registration(username=requests.username, first_name=requests.first_name, last_name=requests.last_name, password=requests.hashed_password)
+    
 
 @router.post("/login")
 @inject
