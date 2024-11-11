@@ -57,7 +57,7 @@ class UserAuthService:
             token_type="bearer",  # noqa: S106
         )
     
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+    def verify_password(self,*, plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
 
     async def verify_token(self, token: str) -> User:
@@ -91,11 +91,11 @@ class UserAuthService:
         try:
             user = self.user_repository.get_by_username(username=token.username)
 
-            if not self.verify_password(token.password, user.hashed_password):
+            if not self.verify_password(plain_password=token.password, hashed_password=user.hashed_password):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Noto'g'ri parol")
 
         except NoResultFound:
-            return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = self.create_access_token(
