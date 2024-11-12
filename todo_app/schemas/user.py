@@ -5,7 +5,7 @@ class CreateUserRequest(BaseModel):
     username: str
     first_name: str | None = None
     last_name: str | None = None
-    hashed_password: str
+    password: str
 
 class LoginRequest(BaseModel):
     username: str

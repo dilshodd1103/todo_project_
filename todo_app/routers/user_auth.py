@@ -23,7 +23,7 @@ async def register(
     requests: CreateUserRequest,
     user_service: UserAuthService = _user_service,
 ) -> None:
-    await user_service.registration(username=requests.username, first_name=requests.first_name, last_name=requests.last_name, password=requests.hashed_password)
+    await user_service.registration(username=requests.username, first_name=requests.first_name, last_name=requests.last_name, password=requests.password)
     
 
 @router.post("/login")
