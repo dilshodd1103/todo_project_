@@ -21,6 +21,7 @@ from ..schemas.user import (
 SECRET_KEY = settings.jwt.secret_key
 ALGORITHM = settings.jwt.algoritm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS = settings.jwt.refresh_token_expire_days
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -34,6 +35,11 @@ class UserAuthService:
         expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=45))
         new_data = {"exp": expire, **data}
         return jwt.encode(new_data, SECRET_KEY, algorithm=ALGORITHM)
+
+    # def create_refresh_token(self, data: dict, expires_delta: timedelta | None = None) -> str:  # noqa: PLR6301
+    #     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=45))
+    #     new_data = {"exp": expire, **data}
+    #     return jwt.encode(new_data, SECRET_KEY, algorithm=ALGORITHM)
 
     def get_user_id_from_token(self, token: str) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
@@ -52,8 +58,10 @@ class UserAuthService:
     async def refresh_token(self, token: str) -> CreateTokenResponse:
         user = await self.verify_token(token)
         access_token = self.create_access_token(data={"sub": user.username})
+        refresh_token = self.create_access_token(data={"exp": user.username })
         return CreateTokenResponse(
             access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",  # noqa: S106
         )
     
@@ -98,8 +106,15 @@ class UserAuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
         access_token = self.create_access_token(
             data={"sub": user.username},
             expires_delta=access_token_expires,
         )
-        return CreateTokenResponse(access_token=access_token, token_type="bearer")  # noqa: S106
+        refresh_token = self.create_access_token(
+        data={"sub": user.username},
+        expires_delta=refresh_token_expires,
+        )
+
+        return CreateTokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")  # noqa: S106
