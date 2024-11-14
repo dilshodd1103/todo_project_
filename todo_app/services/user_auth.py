@@ -36,11 +36,6 @@ class UserAuthService:
         new_data = {"exp": expire, **data}
         return jwt.encode(new_data, SECRET_KEY, algorithm=ALGORITHM)
 
-    # def create_refresh_token(self, data: dict, expires_delta: timedelta | None = None) -> str:  # noqa: PLR6301
-    #     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=45))
-    #     new_data = {"exp": expire, **data}
-    #     return jwt.encode(new_data, SECRET_KEY, algorithm=ALGORITHM)
-
     def get_user_id_from_token(self, token: str) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
         username: str = payload.get("sub")
